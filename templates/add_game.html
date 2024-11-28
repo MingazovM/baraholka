@@ -1,0 +1,56 @@
+<!-- add_game.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Добавить игру</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Добавить новую игру</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">← Вернуться к списку</a>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Название игры</label>
+                    <input type="text" name="title" required placeholder="Например: Манчкин">
+                </div>
+                
+                <div class="form-group">
+                    <label>Состояние</label>
+                    <select name="condition" required>
+                        <option value="">Выберите состояние</option>
+                        <option value="new">Как новая</option>
+                        <option value="very_good">Очень хорошее</option>
+                        <option value="good">Хорошее</option>
+                        <option value="acceptable">Приемлемое</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Цена закупки</label>
+                    <input type="number" name="purchase_price" step="0.01" required placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label>Цена продажи</label>
+                    <input type="number" name="selling_price" step="0.01" required placeholder="0.00">
+                </div>
+                
+                <div class="form-group">
+                    <label>Примечания</label>
+                    <textarea name="notes" rows="4" placeholder="Дополнительная информация о игре..."></textarea>
+                </div>
+                
+                <button type="submit">Добавить игру</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

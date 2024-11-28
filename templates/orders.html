@@ -1,0 +1,59 @@
+<!-- orders.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Список заказов</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Список заказов</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('create_order') }}" class="btn btn-primary">Новый заказ</a>
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">← К списку игр</a>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Игра</th>
+                        <th>Клиент</th>
+                        <th>Телефон</th>
+                        <th>Дата</th>
+                        <th>Статус</th>
+                        <th>Сумма</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>#{{ order.id }}</td>
+                        <td>{{ Game.query.get(order.game_id).title }}</td>
+                        <td>{{ order.customer_name }}</td>
+                        <td>{{ order.customer_phone }}</td>
+                        <td>{{ order.order_date.strftime('%d.%m.%Y %H:%M') }}</td>
+                        <td>
+                            <span class="status-{{ order.status }}">
+                                {% if order.status == 'new' %}
+                                    Новый
+                                {% elif order.status == 'completed' %}
+                                    Завершён
+                                {% elif order.status == 'cancelled' %}
+                                    Отменён
+                                {% endif %}
+                            </span>
+                        </td>
+                        <td>{{ order.total_price }} ₽</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

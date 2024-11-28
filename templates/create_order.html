@@ -1,0 +1,50 @@
+<!-- create_order.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Создать заказ</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Создать новый заказ</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="btn btn-secondary">← Вернуться к списку</a>
+            </div>
+        </div>
+
+        <div class="form-container">
+            <form method="POST">
+                <div class="form-group">
+                    <label>Выберите игру</label>
+                    <select name="game_id" required>
+                        <option value="">Выберите игру</option>
+                        {% for game in games %}
+                        <option value="{{ game.id }}">{{ game.title }} - {{ game.selling_price }} ₽</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Имя клиента</label>
+                    <input type="text" name="customer_name" required placeholder="Введите имя клиента">
+                </div>
+                
+                <div class="form-group">
+                    <label>Телефон клиента</label>
+                    <input type="tel" name="customer_phone" required placeholder="+7 (___) ___-__-__">
+                </div>
+                
+                <div class="form-group">
+                    <label>Итоговая цена</label>
+                    <input type="number" name="total_price" step="0.01" required placeholder="0.00">
+                </div>
+                
+                <button type="submit">Создать заказ</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

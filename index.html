@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Магазин настольных игр</title>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+    
     <style>
+        /* Тот же CSS код, что и раньше */
         .container {
             padding: 2rem;
             max-width: 1200px;
@@ -89,16 +94,6 @@
             font-size: 0.875rem;
             color: #6B7280;
             margin-bottom: 0.5rem;
-        }
-
-        .controls-container {
-            margin-bottom: 2rem;
-        }
-
-        .search-container {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
         }
 
         .table-container {
@@ -198,6 +193,12 @@
         tr:hover {
             background-color: #F9FAFB;
         }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6B7280;
+        }
     </style>
 </head>
 <body>
@@ -219,31 +220,31 @@
         <div class="stats-container">
             <div class="stat-card">
                 <h3>Всего игр</h3>
-                <div>10</div>
+                <div id="totalGames">0</div>
             </div>
             <div class="stat-card">
                 <h3>Доступно</h3>
-                <div>7</div>
+                <div id="availableGames">0</div>
             </div>
             <div class="stat-card">
                 <h3>Зарезервировано</h3>
-                <div>2</div>
+                <div id="reservedGames">0</div>
             </div>
             <div class="stat-card">
                 <h3>Продано за месяц</h3>
-                <div>1</div>
+                <div id="soldGames">0</div>
             </div>
         </div>
 
         <div class="controls-container">
             <div class="search-container">
-                <select class="btn btn-secondary" id="statusFilter">
+                <select class="btn btn-secondary" id="statusFilter" onchange="applyFilters()">
                     <option value="">Все статусы</option>
                     <option value="available">Доступно</option>
                     <option value="reserved">Зарезервировано</option>
                     <option value="sold">Продано</option>
                 </select>
-                <select class="btn btn-secondary" id="conditionFilter">
+                <select class="btn btn-secondary" id="conditionFilter" onchange="applyFilters()">
                     <option value="">Все состояния</option>
                     <option value="new">Как новая</option>
                     <option value="very_good">Очень хорошее</option>
@@ -257,15 +258,17 @@
             <table>
                 <thead>
                     <tr>
-                        <th>Название ↕</th>
-                        <th>Состояние ↕</th>
-                        <th>Цена ↕</th>
-                        <th>Статус ↕</th>
+                        <th onclick="sortTable('title')">Название ↕</th>
+                        <th onclick="sortTable('condition')">Состояние ↕</th>
+                        <th onclick="sortTable('selling_price')">Цена ↕</th>
+                        <th onclick="sortTable('status')">Статус ↕</th>
                         <th>Действия</th>
                     </tr>
                 </thead>
                 <tbody id="gamesTableBody">
-                    <!-- Данные будут добавлены через JavaScript -->
+                    <tr>
+                        <td colspan="5" class="loading">Загрузка данных...</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -318,56 +321,25 @@
     </div>
 
     <script>
-        // Пример данных (в реальном приложении будут храниться в базе данных)
-        const games = [
-            {
-                title: "Манчкин",
-                condition: "new",
-                selling_price: 1500,
-                status: "available"
-            },
-            {
-                title: "Каркассон",
-                condition: "very_good",
-                selling_price: 2000,
-                status: "reserved"
-            },
-            {
-                title: "Колонизаторы",
-                condition: "good",
-                selling_price: 2500,
-                status: "available"
-            }
-        ];
+        // Инициализация Firebase
+        const firebaseConfig = {
+            // Вставьте сюда вашу конфигурацию Firebase
+            apiKey: "AIzaSyCA7VWVZgMAwmV5zXCE7Ujfeh2DpaIpNLY",
+            authDomain: "baraholka-2024.firebaseapp.com",
+            projectId: "baraholka-2024",
+            storageBucket: "baraholka-2024.firebasestorage.app",
+            messagingSenderId: "196358690086",
+            appId: "1:196358690086:web:beb168b378fcbb93de9de7"
+        };
 
-        function renderGames() {
-            const tbody = document.getElementById('gamesTableBody');
-            tbody.innerHTML = '';
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const gamesCollection = db.collection('games');
 
-            games.forEach(game => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td>${game.title}</td>
-                    <td>
-                        <span class="condition-badge condition-${game.condition}">
-                            ${getConditionText(game.condition)}
-                        </span>
-                    </td>
-                    <td>${game.selling_price} ₽</td>
-                    <td>
-                        <span class="status-badge status-${game.status}">
-                            ${getStatusText(game.status)}
-                        </span>
-                    </td>
-                    <td>
-                        ${game.status === 'available' ? 
-                            '<button class="btn btn-primary">Продать</button>' : ''}
-                        <button class="btn btn-secondary">✏️</button>
-                    </td>
-                `;
-                tbody.appendChild(tr);
-            });
-        }
+        // Функции для работы с данными
+        let games = [];
+        let currentSort = { field: 'title', direction: 'asc' };
 
         function getConditionText(condition) {
             const conditions = {
@@ -388,6 +360,145 @@
             return statuses[status] || status;
         }
 
+        function updateStats() {
+            document.getElementById('totalGames').textContent = games.length;
+            document.getElementById('availableGames').textContent = 
+                games.filter(g => g.status === 'available').length;
+            document.getElementById('reservedGames').textContent = 
+                games.filter(g => g.status === 'reserved').length;
+            document.getElementById('soldGames').textContent = 
+                games.filter(g => g.status === 'sold').length;
+        }
+
+        function renderGames(gamesToRender = games) {
+            const tbody = document.getElementById('gamesTableBody');
+            tbody.innerHTML = '';
+
+            gamesToRender.forEach(game => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${game.title}</td>
+                    <td>
+                        <span class="condition-badge condition-${game.condition}">
+                            ${getConditionText(game.condition)}
+                        </span>
+                    </td>
+                    <td>${game.selling_price} ₽</td>
+                    <td>
+                        <span class="status-badge status-${game.status}">
+                            ${getStatusText(game.status)}
+                        </span>
+                    </td>
+                    <td>
+                        ${game.status === 'available' ? 
+                            `<button class="btn btn-primary" onclick="sellGame('${game.id}')">Продать</button>` : ''}
+                        <button class="btn btn-secondary" onclick="editGame('${game.id}')">✏️</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function sortTable(field) {
+            if (currentSort.field === field) {
+                currentSort.direction = currentSort.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSort.field = field;
+                currentSort.direction = 'asc';
+            }
+
+            games.sort((a, b) => {
+                let comparison = 0;
+                if (a[field] > b[field]) comparison = 1;
+                if (a[field] < b[field]) comparison = -1
+                if (currentSort.direction === 'desc') {
+                    comparison = -comparison;
+                }
+                return comparison;
+            });
+
+            renderGames();
+        }
+
+        function applyFilters() {
+            const statusFilter = document.getElementById('statusFilter').value;
+            const conditionFilter = document.getElementById('conditionFilter').value;
+
+            let filteredGames = games;
+
+            if (statusFilter) {
+                filteredGames = filteredGames.filter(game => game.status === statusFilter);
+            }
+
+            if (conditionFilter) {
+                filteredGames = filteredGames.filter(game => game.condition === conditionFilter);
+            }
+
+            renderGames(filteredGames);
+        }
+
+        async function loadGames() {
+            try {
+                const snapshot = await gamesCollection.get();
+                games = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+                updateStats();
+                renderGames();
+            } catch (error) {
+                console.error("Ошибка при загрузке данных:", error);
+                alert("Не удалось загрузить данные. Попробуйте обновить страницу.");
+            }
+        }
+
+        async function addGame(gameData) {
+            try {
+                const docRef = await gamesCollection.add({
+                    ...gameData,
+                    status: 'available',
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                const newGame = {
+                    id: docRef.id,
+                    ...gameData,
+                    status: 'available'
+                };
+                games.push(newGame);
+                updateStats();
+                renderGames();
+                return true;
+            } catch (error) {
+                console.error("Ошибка при добавлении игры:", error);
+                alert("Не удалось добавить игру. Попробуйте еще раз.");
+                return false;
+            }
+        }
+
+        async function sellGame(gameId) {
+            if (!confirm('Вы уверены, что хотите отметить игру как проданную?')) {
+                return;
+            }
+
+            try {
+                await gamesCollection.doc(gameId).update({
+                    status: 'sold',
+                    soldAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                const gameIndex = games.findIndex(g => g.id === gameId);
+                if (gameIndex !== -1) {
+                    games[gameIndex].status = 'sold';
+                }
+                
+                updateStats();
+                renderGames();
+            } catch (error) {
+                console.error("Ошибка при продаже игры:", error);
+                alert("Не удалось обновить статус игры. Попробуйте еще раз.");
+            }
+        }
+
         function openModal(modalId) {
             document.getElementById(modalId).style.display = 'block';
         }
@@ -398,23 +509,32 @@
         }
 
         // Обработчик отправки формы
-        document.getElementById('addGameForm').addEventListener('submit', function(e) {
+        document.getElementById('addGameForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const newGame = {
                 title: this.title.value,
                 condition: this.condition.value,
+                purchase_price: parseInt(this.purchase_price.value),
                 selling_price: parseInt(this.selling_price.value),
-                status: 'available'
+                notes: this.notes.value
             };
             
-            games.push(newGame);
-            renderGames();
-            closeModal('quickAddModal');
+            const success = await addGame(newGame);
+            if (success) {
+                closeModal('quickAddModal');
+            }
         });
 
-        // Инициализация таблицы при загрузке страницы
-        renderGames();
+        // Загрузка данных при старте
+        loadGames();
+
+        // Закрытие модального окна при клике вне его
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                closeModal(event.target.id);
+            }
+        }
     </script>
 </body>
 </html>

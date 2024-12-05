@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -15,14 +15,15 @@ class Game(db.Model):
     date_added = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(20), default='available')  # available, sold, reserved
     notes = db.Column(db.Text)
+    orders = db.relationship('Order', backref='game', lazy=True)
 
 class Order(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    game_id = db.Column(db.Integer, db.ForeignKey('game.id'))
+    game_id = db.Column(db.Integer, db.ForeignKey('game.id'), nullable=False)
     customer_name = db.Column(db.String(100))
     customer_phone = db.Column(db.String(20))
     order_date = db.Column(db.DateTime, default=datetime.utcnow)
-    status = db.Column(db.String(20))  # new, completed, cancelled
+    status = db.Column(db.String(20), default='new')  # new, completed, cancelled
     total_price = db.Column(db.Float)
 
 @app.route('/')
@@ -33,39 +34,59 @@ def index():
 @app.route('/add_game', methods=['GET', 'POST'])
 def add_game():
     if request.method == 'POST':
-        game = Game(
-            title=request.form['title'],
-            condition=request.form['condition'],
-            purchase_price=float(request.form['purchase_price']),
-            selling_price=float(request.form['selling_price']),
-            notes=request.form['notes']
-        )
-        db.session.add(game)
-        db.session.commit()
-        return redirect(url_for('index'))
+        try:
+            if request.is_json:
+                data = request.get_json()
+            else:
+                data = request.form
+
+            game = Game(
+                title=data.get('title'),
+                condition=data.get('condition'),
+                purchase_price=float(data.get('purchase_price')),
+                selling_price=float(data.get('selling_price')),
+                notes=data.get('notes')
+            )
+            db.session.add(game)
+            db.session.commit()
+
+            if request.is_json:
+                return jsonify({'success': True, 'message': 'Игра успешно добавлена'}), 200
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            if request.is_json:
+                return jsonify({'success': False, 'error': str(e)}), 400
+            return redirect(url_for('index'))
+
     return render_template('add_game.html')
 
 @app.route('/create_order', methods=['GET', 'POST'])
 def create_order():
     if request.method == 'POST':
-        order = Order(
-            game_id=request.form['game_id'],
-            customer_name=request.form['customer_name'],
-            customer_phone=request.form['customer_phone'],
-            status='new',
-            total_price=float(request.form['total_price'])
-        )
-        game = Game.query.get(request.form['game_id'])
-        game.status = 'reserved'
-        db.session.add(order)
-        db.session.commit()
-        return redirect(url_for('orders'))
+        game_id = int(request.form['game_id'])
+        game = Game.query.get(game_id)
+        
+        if game and game.status == 'available':
+            order = Order(
+                game_id=game_id,
+                customer_name=request.form['customer_name'],
+                customer_phone=request.form['customer_phone'],
+                status='new',
+                total_price=float(request.form['total_price'])
+            )
+            
+            game.status = 'reserved'
+            db.session.add(order)
+            db.session.commit()
+            return redirect(url_for('orders'))
+            
     games = Game.query.filter_by(status='available').all()
     return render_template('create_order.html', games=games)
 
 @app.route('/orders')
 def orders():
-    orders = Order.query.all()
+    orders = Order.query.order_by(Order.order_date.desc()).all()
     return render_template('orders.html', orders=orders)
 
 if __name__ == '__main__':

@@ -1,50 +1,143 @@
-<!-- create_order.html -->
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Создать заказ</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <style>
+        .container {
+            padding: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            gap: 0.5rem;
+            font-size: 1rem;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background-color: #4F46E5;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #4338CA;
+        }
+
+        .btn-secondary {
+            background-color: #E5E7EB;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background-color: #D1D5DB;
+        }
+
+        .form-container {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #D1D5DB;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4F46E5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
+        <header class="header">
             <h1>Создать новый заказ</h1>
             <div class="nav-links">
                 <a href="{{ url_for('index') }}" class="btn btn-secondary">← Вернуться к списку</a>
             </div>
-        </div>
+        </header>
 
         <div class="form-container">
-            <form method="POST">
+            <form method="POST" id="orderForm">
                 <div class="form-group">
-                    <label>Выберите игру</label>
-                    <select name="game_id" required>
+                    <label for="game_id">Выберите игру</label>
+                    <select id="game_id" name="game_id" class="form-control" required onchange="updatePrice()">
                         <option value="">Выберите игру</option>
                         {% for game in games %}
-                        <option value="{{ game.id }}">{{ game.title }} - {{ game.selling_price }} ₽</option>
+                        <option value="{{ game.id }}" data-price="{{ game.selling_price }}">
+                            {{ game.title }} - {{ game.selling_price }} ₽
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Имя клиента</label>
-                    <input type="text" name="customer_name" required placeholder="Введите имя клиента">
+                    <label for="customer_name">Имя клиента</label>
+                    <input type="text" id="customer_name" name="customer_name" class="form-control" required>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Телефон клиента</label>
-                    <input type="tel" name="customer_phone" required placeholder="+7 (___) ___-__-__">
+                    <label for="customer_phone">Телефон клиента</label>
+                    <input type="tel" id="customer_phone" name="customer_phone" class="form-control" required>
                 </div>
-                
+
                 <div class="form-group">
-                    <label>Итоговая цена</label>
-                    <input type="number" name="total_price" step="0.01" required placeholder="0.00">
+                    <label for="total_price">Итоговая цена</label>
+                    <input type="number" id="total_price" name="total_price" class="form-control" readonly required>
                 </div>
-                
-                <button type="submit">Создать заказ</button>
+
+                <button type="submit" class="btn btn-primary">Создать заказ</button>
             </form>
         </div>
     </div>
+
+    <script>
+        function updatePrice() {
+            const select = document.getElementById('game_id');
+            const option = select.options[select.selectedIndex];
+            const price = option.getAttribute('data-price');
+            document.getElementById('total_price').value = price;
+        }
+    </script>
 </body>
 </html>
